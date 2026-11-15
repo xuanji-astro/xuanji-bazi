@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only · 玄玑 xuanji-paipan
 // 五行能量环：加权占比 + 每行挂的十神 + 类型标签
 
-import { ELEMENTS, WUXING_RING, STRENGTH_SCORE, STRENGTH_TYPE_BANDS } from '../config.js';
+import { ELEMENTS, WUXING_RING, STRENGTH_TYPE_MAP } from '../config.js';
 import { presentPillars } from '../chart.js';
 
 // 取整后残差归原始值最大的一项，保证总和 100
@@ -24,20 +24,24 @@ export function classify(percent, thresholds = WUXING_RING.typeThresholds) {
   return { type: '极强型', range, dominant };
 }
 
-// 引擎身强弱判断 → 强度分和类型标签；三项有一项读不出来就不给标签（不硬凑）
-export function strengthType(dms) {
-  const d = dms?.details;
-  const basis = (d?.ruleBasis ?? []).join('；');
-  const month = basis.match(/月令与司令合看为(扶身|相持|制身)/)?.[1];
-  const momentum = basis.match(/中余气合看为(扶身|相持|制身)/)?.[1];
-  if (!d || !month || !momentum) return { score: null, type: null };
-  const root = d.hasStrongRoot ? 'strong' : d.hasRoot ? 'has' : 'none';
-  const score = STRENGTH_SCORE.month[month] + STRENGTH_SCORE.root[root] + STRENGTH_SCORE.momentum[momentum];
-  const band = STRENGTH_TYPE_BANDS.find((b) => score >= b.min);
-  return { score, type: band.type, parts: { month, root, momentum } };
+// 引擎身强弱七档 → 类型标签；时辰不详或引擎没给结论就不给标签（不硬凑）
+export function strengthType(dms, timeKnown = true) {
+  if (!timeKnown) return { type: null };
+  return { type: STRENGTH_TYPE_MAP[dms?.status] ?? null };
 }
 
-export function wuxingRing(chart, cfg = WUXING_RING, dms = null) {
+// 引擎身强弱的三项定性依据（月令／通根／得势），原样转出给解读层讲「为什么这么判」；时辰不详或读不全就不给
+export function strengthBasis(dms, timeKnown = true) {
+  const d = dms?.details;
+  if (!timeKnown || !d) return null;
+  const basis = (d.ruleBasis ?? []).join('；');
+  const month = basis.match(/月令与司令合看为(扶身|相持|制身)/)?.[1];
+  const momentum = basis.match(/中余气合看为(扶身|相持|制身)/)?.[1];
+  if (!month || !momentum) return null;
+  return { month, root: d.hasStrongRoot ? 'strong' : d.hasRoot ? 'has' : 'none', momentum };
+}
+
+export function wuxingRing(chart, cfg = WUXING_RING, dms = null, timeKnown = true) {
   const raw = Object.fromEntries(ELEMENTS.map((el) => [el, 0]));
   const tenGods = Object.fromEntries(ELEMENTS.map((el) => [el, []]));
   const addTenGod = (el, name) => {
@@ -62,8 +66,8 @@ export function wuxingRing(chart, cfg = WUXING_RING, dms = null) {
   const label = classify(rounded, cfg.typeThresholds);
 
   return {
-    // 标签按身强弱强度分出；引擎没给身强弱（时辰不详等）就不给标签
-    ...(({ score, type }) => ({ type, strengthScore: score }))(strengthType(dms)),
+    // 标签由引擎身强弱七档映射；时辰不详或引擎没给结论就不给标签
+    type: strengthType(dms, timeKnown).type,
     strength: dms?.status && dms.status !== '未知' ? dms.status : null,
     rangeType: label.type,
     range: label.range,
