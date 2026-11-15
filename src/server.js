@@ -7,6 +7,7 @@ import { paipan, InputError, ENGINE } from './paipan.js';
 import { CONFIG_VERSION } from './config.js';
 
 const PORT = Number(process.env.PORT ?? 8080);
+const HOST = process.env.BIND_HOST ?? '127.0.0.1';
 // 设了就要求请求带 Authorization: Bearer <token>，只给主站服务器用
 const TOKEN = process.env.PAIPAN_TOKEN ?? '';
 const MAX_BODY_BYTES = 4 * 1024;
@@ -89,4 +90,4 @@ server.requestTimeout = REQUEST_TIMEOUT_MS;
 server.headersTimeout = REQUEST_TIMEOUT_MS;
 
 // 测试时只导入不监听
-if (process.env.NODE_ENV !== 'test') server.listen(PORT, () => console.log(`xuanji-paipan listening on :${PORT}`));
+if (process.env.NODE_ENV !== 'test') server.listen(PORT, HOST, () => console.log(`xuanji-paipan listening on :${PORT}`));
