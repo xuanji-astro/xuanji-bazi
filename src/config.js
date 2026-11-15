@@ -2,7 +2,7 @@
 // 玄玑 xuanji-paipan · 算法配置表
 // 口径只改这里，计算函数只读不写死数字。改了任何一项都要升 CONFIG_VERSION。
 
-export const CONFIG_VERSION = '2026-09-30.v1.4';
+export const CONFIG_VERSION = '2026-10-10.v1.9.2';
 
 export const ELEMENTS = ['木', '火', '土', '金', '水'];
 
@@ -20,20 +20,19 @@ export const WUXING_RING = {
   typeThresholds: { balancedMax: 25, dominantMax: 40 },
 };
 
-// ── 类型标签：身强弱强度分 → 四档（v0，按样本盘标定，分界线较薄，样本多了要复校）──
-// 强度分 = 月令项 + 通根项 + 得势项，三项都取自引擎的身强弱判断（ruleBasis 与通根字段）
-export const STRENGTH_SCORE = {
-  month: { 扶身: 25, 相持: 20, 制身: 10 },       // 月令与司令合看
-  root: { strong: 40, has: 10, none: 0 },        // 通根：强根／有根／无根
-  momentum: { 扶身: 20, 相持: 10, 制身: 0 },     // 成局、明根明透及中余气合看（得势）
+// ── 类型标签：引擎身强弱七档 → 五档 ──
+// v1.6 起不再另算强度分：标签直接由引擎的七档定性结论映射，免得同一张盘出现「身强」和「均衡型」两个说法。
+// 引擎七档从强到弱：极强 > 身强 > 偏强 > 中和 > 偏弱 > 身弱 > 极弱。弱的一侧三档合成「偏弱型」。
+// 时辰不详时不给标签（时柱缺了，通根和得势各少一角）。
+export const STRENGTH_TYPE_MAP = {
+  极强: '极强型',
+  身强: '身强型',
+  偏强: '偏强型',
+  中和: '均衡型',
+  偏弱: '偏弱型',
+  身弱: '偏弱型',
+  极弱: '偏弱型',
 };
-// 从高到低：分数 ≥ 下限就是这一档
-export const STRENGTH_TYPE_BANDS = [
-  { min: 80, type: '极强型' },
-  { min: 60, type: '身强型' },
-  { min: 55, type: '均衡型' },
-  { min: 0, type: '偏弱型' },
-];
 
 // ── 十神占比条：扁平计数 ──
 // 天干每字 1、每个藏干 1、日主不计；归一后每项去尾取整，总和可以不足 100。
@@ -56,8 +55,11 @@ export const SHENSHA_DIMENSIONS = [
 // 档位下限，从高到低；判词按「维度 × 档位」在主站配
 export const SHENSHA_TIERS = [90, 70, 50];
 
-// 稀有前三：命中的神煞按下表从前往后取前三（越靠前越稀有）；不在表里的不进稀有前三。
-export const SHENSHA_RARITY_ORDER = ['词馆', '天医', '红鸾', '十灵日', '天喜', '华盖', '天德贵人', '金舆'];
+// 稀有前三：从命中的吉神（外加华盖）里，按出现比例（有这颗星的盘占多少）从小到大取前三。
+// 比例表在 src/rarity.js，是用本服务按出生时间抽样排盘统计出来的（不是任何用户库的数据），见 scripts/rarity.mjs。
+export const SHENSHA_FEATURED_EXTRA = ['华盖'];
+// 星级分界（%）：出现比例 <15 五星／15–30 四星／30–45 三星／45–60 二星／≥60 一星；只由出现比例决定，越少见星越多
+export const SHENSHA_STAR_BANDS = [15, 30, 45, 60];
 
 // ── 大运 / 流年分数（方案 A）──
 // score = base + xiJiWeight×(干喜忌 + 支喜忌) + tenGodWeight×(干十神 + 支十神)，再夹到 clip 区间；地支取本气。
